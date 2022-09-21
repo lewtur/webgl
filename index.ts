@@ -30,6 +30,9 @@ type ProgramInfo = {
   }
 }
 
+/**
+ * Run the thing
+ */
 function main() {
   // get the canvas element
   const canvas = document.querySelector('#glCanvas') as HTMLCanvasElement;
@@ -67,7 +70,10 @@ function main() {
   drawScene(gl, programInfo);
 }
 
-
+/**
+ * Set the coordinate position of the thing to draw, assign it to a bugger, and assign that buffer to the
+ * given gl context
+ */
 function initBuffers(gl: WebGLRenderingContext) {
   // create a buffer for the squares positions
   const positionBuffer = gl.createBuffer();
@@ -85,6 +91,9 @@ function initBuffers(gl: WebGLRenderingContext) {
   return positionBuffer;
 }
 
+/**
+ * Go through a lot of complicated settings and actually draw the scene
+ */
 function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo) {
   // clear to black, fully opaque
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -169,9 +178,15 @@ function drawScene(gl: WebGLRenderingContext, programInfo: ProgramInfo) {
   // gl.TRIANGLE_STRIP draws the filled in square
   // gl.TRIANGLE_FAN draws a backwards square pacman (???)
   // gl.TRIANGLES draws '◹'
-  gl.drawArrays(gl.TRIANGLE_FAN, offset, vertexCount);
+  gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
 }
 
+/**
+ * Compile the vertex and fragment shader programs, create new program and assign them to it
+ * @param gl the WebGL context
+ * @param vsSource the source code of the vertex shader program
+ * @param fsSource the source code of the fragment shader program
+ */
 function initShaderProgram(gl: WebGLRenderingContext, vsSource: string, fsSource: string) {
   // compile the two shader programs
   const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
@@ -200,6 +215,12 @@ function initShaderProgram(gl: WebGLRenderingContext, vsSource: string, fsSource
   return shaderProgram;
 }
 
+/**
+ * Given the source code, compile the shader program and return it
+ * @param gl the WebGL context
+ * @param type type of shader being loaded
+ * @param source the source code
+ */
 function loadShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
   // create a new shader
   const shader = gl.createShader(type)
