@@ -40,9 +40,10 @@ type ProgramInfo = {
 type Buffers = {
   positionBuffer: WebGLBuffer | null;
   colorBuffer: WebGLBuffer | null;
+  indicesBuffer: WebGLBuffer | null;
 };
 
-let squareRotation = 0.0;
+let cubeRotation = 0.0;
 let then = 0;
 
 /**
@@ -107,55 +108,115 @@ function main() {
  * given gl context
  */
 function initBuffers(gl: WebGLRenderingContext) {
-  /**
-   * position buffer
-   */
-
-  // create a buffer for the squares positions
+  // position buffer
   const positionBuffer = gl.createBuffer();
+  {
+    // create a buffer for the squares positions
 
-  // select the position buffer as the one to apply buffer operations to from here out
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    // select the position buffer as the one to apply buffer operations to from here out
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-  // create an array of positions for the square
-  // PARAM: changing the values here change the coordinates of each point drawn
-  const positions = [1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0];
+    // create an array of positions for the square
+    // PARAM: changing the values here change the coordinates of each point drawn
+    const positions = [
+      // Front face
+      -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0,
 
-  // pass the positions into WebGL to build the shape
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+      // Back face
+      -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0,
 
-  /**
-   * color buffer
-   */
+      // Top face
+      -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0,
 
-  // create array of colours, 4 per colour (RGBA)
-  const colors = [
-    1.0,
-    1.0,
-    1.0,
-    1.0, // white
-    1.0,
-    0.0,
-    0.0,
-    1.0, // red
-    0.0,
-    1.0,
-    0.0,
-    1.0, // green
-    0.0,
-    0.0,
-    1.0,
-    1.0, // blue
-  ];
+      // Bottom face
+      -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0,
 
-  // create a new buffer
+      // Right face
+      1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0,
+
+      // Left face
+      -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0,
+    ];
+
+    // pass the positions into WebGL to build the shape
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+  }
+
+  // color buffer
   const colorBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+  {
+    // create array of colours, 4 per colour (RGBA)
+    const faceColors = [
+      [1.0, 1.0, 1.0, 1.0], // Front face: white
+      [1.0, 0.0, 0.0, 1.0], // Back face: red
+      [0.0, 1.0, 0.0, 1.0], // Top face: green
+      [0.0, 0.0, 1.0, 1.0], // Bottom face: blue
+      [1.0, 1.0, 0.0, 1.0], // Right face: yellow
+      [1.0, 0.0, 1.0, 1.0], // Left face: purple
+    ];
+
+    let colors: any[] = [];
+    for (let i = 0; i < faceColors.length; ++i) {
+      const c = faceColors[i];
+      // repeat each colour 4 times
+      colors = colors.concat(c, c, c, c);
+    }
+
+    // create a new buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+  }
+
+  // indices buffer
+  const indicesBuffer = gl.createBuffer();
+  {
+    const indices = [
+      0,
+      1,
+      2,
+      0,
+      2,
+      3, // front
+      4,
+      5,
+      6,
+      4,
+      6,
+      7, // back
+      8,
+      9,
+      10,
+      8,
+      10,
+      11, // top
+      12,
+      13,
+      14,
+      12,
+      14,
+      15, // bottom
+      16,
+      17,
+      18,
+      16,
+      18,
+      19, // right
+      20,
+      21,
+      22,
+      20,
+      22,
+      23, // left
+    ];
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, indicesBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+  }
 
   return {
     positionBuffer,
     colorBuffer,
+    indicesBuffer,
   };
 }
 
@@ -203,17 +264,37 @@ function drawScene(
     // PARAM: changing the values here modifies [x, y, scale]
     [-0.0, 0.0, -6.0] // amount to translate
   );
+
+  // rotate around Z axis
   // @ts-ignore
   mat4.rotate(
     modelViewMatrix, // destination matrix
     modelViewMatrix, // matrix to rotate
-    squareRotation, // amount to rotate in radians
+    cubeRotation, // amount to rotate in radians
     [0, 0, 1] // axis to rotate around
+  );
+
+  // rotate around Y axis
+  // @ts-ignore
+  mat4.rotate(
+    modelViewMatrix, // destination matrix
+    modelViewMatrix, // matrix to rotate
+    cubeRotation * 0.3, // amount to rotate in radians
+    [0, 1, 0] // axis to rotate around
+  );
+
+  // rotate around X axis
+  // @ts-ignore
+  mat4.rotate(
+    modelViewMatrix, // destination matrix
+    modelViewMatrix, // matrix to rotate
+    cubeRotation * 0.3, // amount to rotate in radians
+    [1, 0, 0] // axis to rotate around
   );
 
   // position buffer
   {
-    const numComponents = 2; // pull out 2 values per iteration
+    const numComponents = 3; // pull out 3 values per iteration
     const type = gl.FLOAT; // what the data in the buffer is
     const normalise = false; // don't normalise
     const stride = 0; // how many bytes to get from one set of values to the next
@@ -249,6 +330,11 @@ function drawScene(
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexColor);
   }
 
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indicesBuffer);
+
+  // index buffer
+
+
   // tell WebGL to use our program when drawing
   gl.useProgram(programInfo.program);
 
@@ -264,20 +350,27 @@ function drawScene(
     modelViewMatrix
   );
 
-  const offset = 0;
-  const vertexCount = 4;
-  // PARAM: changing values here change how the shape is drawn. pretty cool.
-  // gl.POINTS just draws a dot at each vertex position
-  // gl.LINE_STRIP draws a backwards 'Z' as it goes through each point one by one
-  // gl.LINE_LOOP draws an hourglass - goes back to the start maybe>
-  // gl.LINES draws an '=' sign, i.e. top and bottom lines
-  // gl.TRIANGLE_STRIP draws the filled in square
-  // gl.TRIANGLE_FAN draws a backwards square pacman (???)
-  // gl.TRIANGLES draws '◹'
-  gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
+  {
+    const vertexCount = 36; // 8 vertices in a cube, each one is copied 3 times = 36
+    const type = gl.UNSIGNED_SHORT;
+    const offset = 0;
+    gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+  }
+
+  // const offset = 0;
+  // const vertexCount = 4;
+  // // PARAM: changing values here change how the shape is drawn. pretty cool.
+  // // gl.POINTS just draws a dot at each vertex position
+  // // gl.LINE_STRIP draws a backwards 'Z' as it goes through each point one by one
+  // // gl.LINE_LOOP draws an hourglass - goes back to the start maybe>
+  // // gl.LINES draws an '=' sign, i.e. top and bottom lines
+  // // gl.TRIANGLE_STRIP draws the filled in square
+  // // gl.TRIANGLE_FAN draws a backwards square pacman (???)
+  // // gl.TRIANGLES draws '◹'
+  // gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
 
   // update rotation for next render
-  squareRotation += deltaTime;
+  cubeRotation += deltaTime;
 }
 
 /**
