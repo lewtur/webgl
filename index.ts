@@ -42,6 +42,9 @@ type Buffers = {
   colorBuffer: WebGLBuffer | null;
 };
 
+let squareRotation = 0.0;
+let then = 0;
+
 /**
  * Run the thing
  */
@@ -85,7 +88,18 @@ function main() {
 
   const buffers = initBuffers(gl);
 
-  drawScene(gl, programInfo, buffers);
+  function render(now: number) {
+    now *= 0.001; // convert to seconds
+    const deltaTime = now - then;
+    then = now;
+
+    if (gl !== null) {
+      drawScene(gl, programInfo, buffers, deltaTime);
+    }
+
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
 }
 
 /**
@@ -151,7 +165,8 @@ function initBuffers(gl: WebGLRenderingContext) {
 function drawScene(
   gl: WebGLRenderingContext,
   programInfo: ProgramInfo,
-  buffers: Buffers
+  buffers: Buffers,
+  deltaTime: number
 ) {
   // clear to black, fully opaque
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -186,7 +201,14 @@ function drawScene(
     modelViewMatrix, // destination matrix
     modelViewMatrix, // matrix to translate
     // PARAM: changing the values here modifies [x, y, scale]
-    [0.0, 0.0, -6.0] // amount to translate
+    [-0.0, 0.0, -6.0] // amount to translate
+  );
+  // @ts-ignore
+  mat4.rotate(
+    modelViewMatrix, // destination matrix
+    modelViewMatrix, // matrix to rotate
+    squareRotation, // amount to rotate in radians
+    [0, 0, 1] // axis to rotate around
   );
 
   // position buffer
@@ -253,6 +275,9 @@ function drawScene(
   // gl.TRIANGLE_FAN draws a backwards square pacman (???)
   // gl.TRIANGLES draws '◹'
   gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
+
+  // update rotation for next render
+  squareRotation += deltaTime;
 }
 
 /**
