@@ -209,7 +209,7 @@ function initBuffers(gl: WebGLRenderingContext) {
       23, // left
     ];
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, indicesBuffer);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
   }
 
